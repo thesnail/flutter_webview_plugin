@@ -90,7 +90,12 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
     NSNumber *clearCookies = call.arguments[@"clearCookies"];
     NSNumber *hidden = call.arguments[@"hidden"];
     NSDictionary *rect = call.arguments[@"rect"];
-    _enableAppScheme = call.arguments[@"enableAppScheme"];
+    if(call.arguments[@"enableAppScheme"]){
+        NSNumber *value = call.arguments[@"enableAppScheme"];
+        _enableAppScheme = [value boolValue];
+    }else{
+        _enableAppScheme = false;
+    }
     NSString *userAgent = call.arguments[@"userAgent"];
     NSNumber *withZoom = call.arguments[@"withZoom"];
     NSNumber *scrollBar = call.arguments[@"scrollBar"];
@@ -163,13 +168,6 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
 
     if (userAgent != (id)[NSNull null]) {
         [[NSUserDefaults standardUserDefaults] registerDefaults:@{@"UserAgent": userAgent}];
-    }
-
-    CGRect rc;
-    if (rect != nil) {
-        rc = [self parseRect:rect];
-    } else {
-        rc = self.viewController.view.bounds;
     }
 
     WKWebViewConfiguration* configuration = [[WKWebViewConfiguration alloc] init];
