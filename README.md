@@ -1,4 +1,5 @@
-[![Flutter Community: flutter_webview_plugin](https://fluttercommunity.dev/_github/header/flutter_webview_plugin)](https://github.com/fluttercommunity/community)
+### 增加对cookie的支持
+
 
 # NOTICE
 > We are working closely with the Flutter Team to integrate all the Community Plugin features in the [Official WebView Plugin](https://pub.dev/packages/webview_flutter). We will try our best to resolve PRs and Bugfixes, but our priority right now is to merge our two code-bases. Once the merge is complete we will deprecate the Community Plugin in favor of the Official one. 
