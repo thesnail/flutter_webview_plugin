@@ -52,6 +52,7 @@ class WebviewManager {
     private Uri fileUri;
     private Uri videoUri;
 
+
     private long getFileSize(Uri fileUri) {
         Cursor returnCursor = context.getContentResolver().query(fileUri, null, null, null, null);
         returnCursor.moveToFirst();
@@ -126,6 +127,7 @@ class WebviewManager {
     ResultHandler resultHandler;
     Context context;
     private boolean ignoreSSLErrors = false;
+    List<Map<String, String>> mCookieList;
 
     WebviewManager(final Activity activity, final Context context, final List<String> channelNames) {
         this.webView = new ObservableWebView(activity);
@@ -368,6 +370,7 @@ class WebviewManager {
             String userAgent,
             String url,
             Map<String, String> headers,
+            List<Map<String, String>> cookieList,
             boolean withZoom,
             boolean displayZoomControls,
             boolean withLocalStorage,
@@ -439,7 +442,8 @@ class WebviewManager {
         if (!scrollBar) {
             webView.setVerticalScrollBarEnabled(false);
         }
-
+        this.mCookieList = cookieList;
+        setCookie(url);
         if (headers != null) {
             webView.loadUrl(url, headers);
         } else {
@@ -553,5 +557,22 @@ class WebviewManager {
         if (webView != null) {
             webView.stopLoading();
         }
+    }
+
+
+
+    void  setCookie(String url) {
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        cookieManager.removeAllCookie();
+        cookieManager.removeSessionCookie();//移除
+
+        Uri uri = Uri.parse(url);
+        String domain = uri.getHost();
+        for (int i = 0; i < this.mCookieList.size(); i++) {
+            Map<String, String> map = this.mCookieList.get(i);
+            cookieManager.setCookie(domain, map.get("k") + '=' + map.get("v"));
+        }
+        cookieManager.flush();
     }
 }

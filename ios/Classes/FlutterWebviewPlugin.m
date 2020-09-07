@@ -10,6 +10,7 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
     NSString* _invalidUrlRegex;
     NSMutableSet* _javaScriptChannelNames;
     NSNumber*  _ignoreSSLErrors;
+    NSArray *_cookieList;
 }
 @end
 
@@ -93,12 +94,50 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
     NSString *userAgent = call.arguments[@"userAgent"];
     NSNumber *withZoom = call.arguments[@"withZoom"];
     NSNumber *scrollBar = call.arguments[@"scrollBar"];
+    NSString *url = call.arguments[@"url"];
     NSNumber *withJavascript = call.arguments[@"withJavascript"];
     _invalidUrlRegex = call.arguments[@"invalidUrlRegex"];
     _ignoreSSLErrors = call.arguments[@"ignoreSSLErrors"];
+    NSArray *cookies = call.arguments[@"cookieList"];
+    _cookieList = cookies;
     _javaScriptChannelNames = [[NSMutableSet alloc] init];
+    if (clearCache != (id)[NSNull null] && [clearCache boolValue]) {
+        [[NSURLCache sharedURLCache] removeAllCachedResponses];
+    }
+
+    if (clearCookies != (id)[NSNull null] && [clearCookies boolValue]) {
+        [[NSURLSession sharedSession] resetWithCompletionHandler:^{
+        }];
+    }
+
+    if (userAgent != (id)[NSNull null]) {
+        [[NSUserDefaults standardUserDefaults] registerDefaults:@{@"UserAgent": userAgent}];
+    }
+    CGRect rc;
+    if (rect != (id)[NSNull null]) {
+        rc = [self parseRect:rect];
+    } else {
+        rc = self.viewController.view.bounds;
+    }
     
-    WKUserContentController* userContentController = [[WKUserContentController alloc] init];
+    //应用于 ajax 请求的 cookie 设置
+    WKUserContentController *userContentController = WKUserContentController.new;
+    // 应用于 request 的 cookie 设置
+    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString: url]];
+    NSDictionary *headFields = request.allHTTPHeaderFields;
+    [cookies enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        NSDictionary *dic = obj;
+        NSString *cookieSource = [NSString stringWithFormat:@"document.cookie = '%@=%@;path=/';",dic[@"k"], dic[@"v"]];
+        WKUserScript *cookieScript = [[WKUserScript alloc] initWithSource:cookieSource injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
+        [userContentController addUserScript:cookieScript];
+
+        NSString *cookie = headFields[dic[@"k"]];
+        if (cookie == nil) {
+            [request addValue:[NSString stringWithFormat:@"%@=%@",dic[@"k"] , dic[@"v"]] forHTTPHeaderField:@"Cookie"];
+        }
+    }];
+
+
     if ([call.arguments[@"javascriptChannelNames"] isKindOfClass:[NSArray class]]) {
         NSArray* javaScriptChannelNames = call.arguments[@"javascriptChannelNames"];
         [_javaScriptChannelNames addObjectsFromArray:javaScriptChannelNames];
@@ -453,8 +492,7 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
     decisionHandler(WKNavigationResponsePolicyAllow);
 }
 
-- (void)registerJavaScriptChannels:(NSSet*)channelNames
-                        controller:(WKUserContentController*)userContentController {
+- (void)registerJavaScriptChannels:(NSSet*)channelNames controller:(WKUserContentController*)userContentController {
     for (NSString* channelName in channelNames) {
         FLTCommunityJavaScriptChannel* _channel =
         [[FLTCommunityJavaScriptChannel alloc] initWithMethodChannel: channel

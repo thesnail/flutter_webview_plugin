@@ -41,7 +41,10 @@ class WebviewScaffold extends StatefulWidget {
     this.geolocationEnabled,
     this.debuggingEnabled = false,
     this.ignoreSSLErrors = false,
+    this.cookieList
   }) : super(key: key);
+
+  final List<Map<String,String>> cookieList;
 
   final PreferredSizeWidget appBar;
   final String url;
